@@ -30,12 +30,12 @@ if os.path.exists('VideoEncoder/config.env'):
 
 # Variables
 
-api_id = int(os.environ.get("API_ID"))
-api_hash = os.environ.get("API_HASH")
-bot_token = os.environ.get("BOT_TOKEN")
+api_id = int(os.environ.get("API_ID", "24828197"))
+api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
+bot_token = os.environ.get("BOT_TOKEN", "")
 
-database = os.environ.get("MONGO_URI")
-session = os.environ.get("SESSION_NAME")
+database = os.environ.get("MONGO_URI", "")
+session = os.environ.get("SESSION_NAME", "")
 
 drive_dir = os.environ.get("DRIVE_DIR")
 index = os.environ.get("INDEX_URL")
