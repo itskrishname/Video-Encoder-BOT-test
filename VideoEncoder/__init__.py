@@ -40,8 +40,8 @@ session = os.environ.get("SESSION_NAME", "")
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
 
-download_dir = os.environ.get("DOWNLOAD_DIR", "")
-encode_dir = os.environ.get("ENCODE_DIR", "")
+download_dir = os.environ.get("DOWNLOAD_DIR", "VideoEncoder/downloads/")
+encode_dir = os.environ.get("ENCODE_DIR", "VideoEncoder/encodes/")
 
 owner = list(set(int(x) for x in os.environ.get("OWNER_ID", "7660990923").split()))
 sudo_users = list(set(int(x) for x in os.environ.get("SUDO_USERS", "2089948673").split()))
