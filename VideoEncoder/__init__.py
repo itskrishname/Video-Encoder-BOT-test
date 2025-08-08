@@ -35,7 +35,7 @@ api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
 bot_token = os.environ.get("BOT_TOKEN", "")
 
 database = os.environ.get("MONGO_URI", "DB:mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
-session = os.environ.get("SESSION_NAME", "")
+session = os.environ.get("SESSION_NAME", "encoderbot")
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
