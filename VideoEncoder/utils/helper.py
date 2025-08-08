@@ -28,13 +28,13 @@ from .ffmpeg import encode, extract_subs
 from .uploads import upload_worker
 
 output = InlineKeyboardMarkup([
-    [InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/veldxd"),
-     InlineKeyboardButton("ʟᴜᴄʏ", url="https://lucy_filter_bot")]
+    [InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/Lord_Vasudev_Krishna"),
+     InlineKeyboardButton("Sᴇᴄʀᴇᴄᴛ 𝐁ᴏᴛ 𝐔ᴘᴅᴀᴛᴇs", url="https://SECRECT_BOT_UPDATES")]
 ])
 
 start_but = InlineKeyboardMarkup([
     [InlineKeyboardButton("sᴛᴀᴛs", callback_data="stats"), InlineKeyboardButton("Settings", callback_data="OpenSettings")],
-    [InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/veldxd"), InlineKeyboardButton("ʟᴜᴄʏ", url="https://lucy_filter_bot")]])
+    [InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/Lord_Vasudev_Krishna"), InlineKeyboardButton("Sᴇᴄʀᴇᴄᴛ 𝐁ᴏᴛ 𝐔ᴘᴅᴀᴛᴇs", url="https://SECRECT_BOT_UPDATES")]])
 
 
 async def check_chat(message, chat):
