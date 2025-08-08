@@ -34,7 +34,7 @@ api_id = int(os.environ.get("API_ID", "24828197"))
 api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
 bot_token = os.environ.get("BOT_TOKEN", "")
 
-database = os.environ.get("MONGO_URI", "")
+database = os.environ.get("MONGO_URI", "DB:mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 session = os.environ.get("SESSION_NAME", "")
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
@@ -43,8 +43,8 @@ index = os.environ.get("INDEX_URL", "")
 download_dir = os.environ.get("DOWNLOAD_DIR", "")
 encode_dir = os.environ.get("ENCODE_DIR", "")
 
-owner = list(set(int(x) for x in os.environ.get("OWNER_ID", "").split()))
-sudo_users = list(set(int(x) for x in os.environ.get("SUDO_USERS", "").split()))
+owner = list(set(int(x) for x in os.environ.get("OWNER_ID", "7660990923").split()))
+sudo_users = list(set(int(x) for x in os.environ.get("SUDO_USERS", "2089948673").split()))
 everyone = list(set(int(x) for x in os.environ.get("EVERYONE_CHATS", "").split()))
 all = everyone + sudo_users + owner
 
