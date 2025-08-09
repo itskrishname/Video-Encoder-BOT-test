@@ -21,9 +21,6 @@ except ImportError:
     pass
 
 from dotenv import load_dotenv
-
-# CRITICAL: Import pyrogram AFTER time fixes
-import pyrogram
 from pyrogram import Client
 
 botStartTime = time.time()
@@ -31,39 +28,32 @@ botStartTime = time.time()
 if os.path.exists('VideoEncoder/config.env'):
     load_dotenv('VideoEncoder/config.env')
 
-# ULTIMATE TIME SYNC FIX - Heroku Specific
-def heroku_time_fix():
-    """Heroku-specific time synchronization fix"""
+# SAFE TIME OFFSET - No recursion, just offset calculation
+def safe_time_offset():
+    """Safe time offset calculation without recursion"""
     try:
         os.environ['TZ'] = 'UTC'
         time.tzset()
         
-        # Get current time and add offset to compensate for Heroku lag
+        # Get current time
         current_utc = datetime.now(timezone.utc)
+        current_timestamp = int(current_utc.timestamp())
         
-        # Add 30 seconds to current time to compensate for Heroku time lag
-        adjusted_time = current_utc + timedelta(seconds=30)
-        adjusted_timestamp = int(adjusted_time.timestamp())
+        # Calculate offset for Heroku time lag (add 30 seconds)
+        offset_timestamp = current_timestamp + 30
         
         print(f"🕐 Original UTC: {current_utc}")
-        print(f"🕐 Adjusted UTC: {adjusted_time}")
-        print(f"🕐 Adjusted Timestamp: {adjusted_timestamp}")
+        print(f"🕐 Original Timestamp: {current_timestamp}")
+        print(f"🕐 Offset Timestamp: {offset_timestamp}")
         
-        # Override time functions temporarily
-        original_time = time.time
-        def patched_time():
-            return adjusted_timestamp + (original_time() - time.time())
-        
-        # This is aggressive but necessary for Heroku
-        time.time = patched_time
-        
-        return adjusted_timestamp
+        # NO TIME.TIME PATCHING - just return offset value
+        return offset_timestamp
     except Exception as e:
-        print(f"⚠️ Time fix error: {e}")
-        return int(time.time())
+        print(f"⚠️ Time calculation error: {e}")
+        return int(time.time()) + 30  # Simple fallback with offset
 
-# Execute time fix BEFORE everything else
-sync_timestamp = heroku_time_fix()
+# Get offset timestamp
+sync_timestamp = safe_time_offset()
 
 # Your original configurations
 api_id = int(os.environ.get("API_ID", "24828197"))
@@ -72,9 +62,9 @@ bot_token = os.environ.get("BOT_TOKEN", "7685081691:AAFhcrRMYsuoYNRoFz-mgpzElLId
 
 database = os.environ.get("MONGO_URI", "mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 
-# Unique session with time offset
+# Simple unique session name
 session_base = os.environ.get("SESSION_NAME", "encoderbot")
-session = f"{session_base}_offset_{sync_timestamp}_{random.randint(1000,9999)}"
+session = f"{session_base}_clean_{sync_timestamp}_{random.randint(1000,9999)}"
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
@@ -120,8 +110,9 @@ def memory_file(name=None, contents=None, *, bytes=True):
 for directory in [download_dir, encode_dir]:
     if not os.path.isdir(directory):
         os.makedirs(directory)
+        print(f"📁 Created directory: {directory}")
 
-# Logging
+# Logging setup
 log_dir = 'VideoEncoder/utils/extras'
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -140,9 +131,9 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
-print(f"🔧 Using time-offset session: {session}")
+print(f"🔧 Using clean session: {session}")
 
-# Ultra-minimal client
+# Clean client - no time patching, just clean initialization
 app = Client(
     session,
     bot_token=bot_token,
@@ -151,5 +142,5 @@ app = Client(
     plugins={'root': os.path.join(__package__, 'plugins')}
 )
 
-print("✅ Client with time offset initialized!")
+print("✅ Clean client initialized!")
 print(f"📊 Config loaded - Owner: {len(owner)}, Sudo: {len(sudo_users)}, Everyone: {len(everyone)}")
