@@ -11,7 +11,7 @@ dns.resolver.default_resolver.nameservers = ['8.8.8.8']
 async def main():
     try:
         print("🚀 Starting bot (single attempt, flood safe)...")
-        await asyncio.sleep(2)  # Small delay helps with time conflicts
+        await asyncio.sleep(2)  # Delay avoids conflicts
 
         await app.start()
         await app.send_message(chat_id=log, text='<b>✅ Video Encoder Bot Started!</b>')
