@@ -1,43 +1,40 @@
-# Core - Fixed versions for stability
+# Core - Python 3.10 compatible versions
 pyrogram==2.0.106
 TgCrypto==1.2.5
 python-dotenv==1.0.0
 
-# Media processing
+# Media processing - Updated versions
 hachoir==3.2.0
 ffmpeg-python==0.2.0
 
-# Web scraping
+# Web scraping - Compatible versions
 beautifulsoup4==4.12.2
 bs4==0.0.1
 lxml==4.9.3
 
-# Downloads
+# Downloads - Updated
 pySmartDL==1.3.4
 requests==2.31.0
-httpx==0.24.1
+httpx==0.25.0
 
-# Database
+# Database - Latest compatible
 dnspython==2.4.2
-motor==3.3.1
+motor==3.3.2
 
-# System utilities
-psutil==5.9.5
+# System utilities - Updated
+psutil==5.9.6
 
-# JavaScript execution
+# JavaScript execution - Latest
 js2py==0.74
 
-# CloudFlare bypass
-cfscrape==2.1.1
+# CloudFlare bypass - Updated alternative
+cloudscraper==1.2.71
 
-# Media info
-lk21==1.0.0
-
-# Google Drive API
-google-api-core==2.11.1
-google-auth==2.23.0
+# Google Drive API - Latest versions
+google-api-core==2.12.0
+google-auth==2.23.4
 oauth2client==4.1.3
-google-api-python-client==2.95.0
-google-auth-httplib2==0.1.0
-google-auth-oauthlib==1.0.0
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
 httplib2==0.22.0
