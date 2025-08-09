@@ -13,101 +13,68 @@ from . import app, log
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
-async def force_time_sync_start():
-    """Time sync issue के लिए advanced retry logic"""
-    max_retries = 8
-    base_delay = 5
-    
-    for attempt in range(max_retries):
+async def safe_start_with_flood_protection():
+    """FLOOD_WAIT protection के साथ safe start"""
+    try:
+        print("🚀 Starting bot with flood protection...")
+        
+        # Simple start - no retries to avoid flood
+        await app.start()
+        
+        # Success message
         try:
-            print(f"🚀 Starting bot... (Attempt {attempt + 1}/{max_retries})")
-            
-            # Advanced time sync check
-            current_time = datetime.now(timezone.utc)
-            print(f"🕐 Current UTC: {current_time}")
-            print(f"🕐 Timestamp: {int(current_time.timestamp())}")
-            
-            # Try different approaches for each attempt
-            if attempt == 0:
-                # Normal start
-                await app.start()
-            elif attempt == 1:
-                # Wait a bit and try
-                await asyncio.sleep(3)
-                await app.start()
-            elif attempt == 2:
-                # Force disconnect and reconnect
-                try:
-                    if app.is_connected:
-                        await app.stop()
-                    await asyncio.sleep(5)
-                except:
-                    pass
-                await app.start()
-            else:
-                # Progressive delay increase
-                delay = base_delay * (attempt - 2)
-                print(f"⏳ Waiting {delay} seconds for time sync...")
-                await asyncio.sleep(delay)
-                await app.start()
-            
-            # Success message
-            try:
-                bot_info = await app.get_me()
-                success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>\n<b>🕐 Attempt:</b> {attempt + 1}\n<b>🕐 Time:</b> {datetime.now(timezone.utc)}'
-                await app.send_message(chat_id=log, text=success_msg)
-            except Exception as e:
-                print(f"Could not send start message: {e}")
-            
-            print("✅ Bot started successfully!")
-            return True
-            
-        except BadMsgNotification as e:
-            print(f"⚠️ Time sync error (Attempt {attempt + 1}): {e}")
-            
-            # Clean up session files on time sync error
-            if attempt > 2:  # After 3rd attempt
-                try:
-                    import os
-                    import glob
-                    session_files = glob.glob("VideoEncoder/*.session*")
-                    for file in session_files:
-                        try:
-                            os.remove(file)
-                            print(f"🗑️ Cleaned session file: {file}")
-                        except:
-                            pass
-                except:
-                    pass
-            
-            if attempt < max_retries - 1:
-                delay = base_delay + (attempt * 2)  # Progressive delay
-                print(f"⏳ Waiting {delay} seconds before retry...")
-                await asyncio.sleep(delay)
-            else:
-                print("❌ Failed to start after all retries!")
-                return False
-                
+            bot_info = await app.get_me()
+            success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>\n<b>🕐 Time:</b> {datetime.now(timezone.utc)}'
+            await app.send_message(chat_id=log, text=success_msg)
         except Exception as e:
-            print(f"❌ Unexpected error (Attempt {attempt + 1}): {e}")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(base_delay)
-            else:
-                return False
-    
-    return False
+            print(f"Could not send start message: {e}")
+        
+        print("✅ Bot started successfully!")
+        return True
+        
+    except FloodWait as e:
+        print(f"🚨 FLOOD_WAIT: Need to wait {e.x} seconds ({e.x//60} minutes)")
+        print(f"💡 Bot will auto-restart after {e.x//60} minutes. Please wait...")
+        
+        # Wait for the flood period
+        await asyncio.sleep(e.x)
+        
+        # Try once more after waiting
+        try:
+            await app.start()
+            print("✅ Bot started successfully after flood wait!")
+            return True
+        except Exception as retry_error:
+            print(f"❌ Failed even after flood wait: {retry_error}")
+            return False
+            
+    except BadMsgNotification as e:
+        print(f"⚠️ Time sync error: {e}")
+        print("🔄 Trying once more after 10 seconds...")
+        await asyncio.sleep(10)
+        try:
+            await app.start()
+            return True
+        except:
+            print("❌ Time sync issue persists")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error starting bot: {e}")
+        return False
 
 async def main():
-    """Main function with advanced time sync handling"""
+    """Main function with flood protection"""
     try:
-        print("🎯 Initializing Video Encoder Bot with Time Sync Fix...")
+        print("🎯 Initializing Video Encoder Bot...")
         
-        # Start bot with time sync retry logic
-        if await force_time_sync_start():
+        # Start bot with flood protection
+        if await safe_start_with_flood_protection():
             print("🎯 Bot is running... Press Ctrl+C to stop")
             await idle()
         else:
-            print("❌ Bot failed to start after all attempts!")
+            print("❌ Bot failed to start!")
+            print("💡 If you see FLOOD_WAIT, please wait and try again later")
             sys.exit(1)
             
     except KeyboardInterrupt:
