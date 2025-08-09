@@ -22,6 +22,20 @@ from io import BytesIO, StringIO
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
+# Python 3.10+ compatibility fix - यह बहुत important है!
+import collections
+try:
+    from collections.abc import Mapping, MutableMapping, Iterable, MutableSet, Callable
+    collections.Mapping = Mapping
+    collections.MutableMapping = MutableMapping
+    collections.Iterable = Iterable
+    collections.MutableSet = MutableSet
+    collections.Callable = Callable
+    print("✅ Python 3.10+ compatibility fix applied!")
+except ImportError:
+    print("⚠️ Using older Python version")
+    pass
+
 from dotenv import load_dotenv
 from pyrogram import Client
 
