@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-import uuid
 import random
 from io import BytesIO, StringIO
 from logging.handlers import RotatingFileHandler
@@ -29,15 +28,14 @@ botStartTime = time.time()
 if os.path.exists('VideoEncoder/config.env'):
     load_dotenv('VideoEncoder/config.env')
 
-# Ultimate time sync fix — add offset to Heroku time drift
+# Heroku time drift fix: add 30 seconds offset for Telegram time sync
 def heroku_time_fix():
     try:
         os.environ['TZ'] = 'UTC'
         time.tzset()
         
         current_utc = datetime.now(timezone.utc)
-        # Add 30 seconds offset to compensate Heroku clock drift
-        adjusted_utc = current_utc + timedelta(seconds=30)
+        adjusted_utc = current_utc + timedelta(seconds=30)  # offset
         adjusted_timestamp = int(adjusted_utc.timestamp())
         
         print(f"🕐 Original UTC: {current_utc}")
@@ -49,7 +47,6 @@ def heroku_time_fix():
         print(f"⚠️ Time fix error: {e}")
         return int(time.time())
 
-# Use adjusted timestamp for session naming
 sync_timestamp = heroku_time_fix()
 
 api_id = int(os.environ.get("API_ID", "24828197"))
@@ -74,13 +71,38 @@ try:
 except:
     log = owner[0] if owner else 7660990923
 
-# Create directories if they don't exist
+data = []
+
+PROGRESS = """
+• {0} of {1}
+• Speed: {2}
+• ETA: {3}
+"""
+
+video_mimetype = [
+    "video/x-flv", "video/mp4", "application/x-mpegURL", "video/MP2T",
+    "video/3gpp", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv",
+    "video/x-matroska", "video/webm", "video/x-m4v", "video/quicktime", "video/mpeg"
+]
+
+def memory_file(name=None, contents=None, *, bytes=True):
+    if isinstance(contents, str) and bytes:
+        contents = contents.encode()
+    file = BytesIO() if bytes else StringIO()
+    if name:
+        file.name = name
+    if contents:
+        file.write(contents)
+        file.seek(0)
+    return file
+
+# Create required folders if not existing
 for directory in [download_dir, encode_dir]:
     if not os.path.isdir(directory):
         os.makedirs(directory)
         print(f"📁 Created directory: {directory}")
 
-# Setup logging
+# Logging setup
 log_dir = 'VideoEncoder/utils/extras'
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -101,6 +123,7 @@ LOGGER = logging.getLogger(__name__)
 
 print(f"🔧 Using time-offset session: {session}")
 
+# Initialize Pyrogram client with minimal config for max compatibility
 app = Client(
     session,
     bot_token=bot_token,
