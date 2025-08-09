@@ -49,7 +49,7 @@ everyone = list(set(int(x) for x in os.environ.get("EVERYONE_CHATS", "").split()
 all = everyone + sudo_users + owner
 
 try:
-    log = int(os.environ.get("LOG_CHANNEL", ""))
+    log = int(os.environ.get("LOG_CHANNEL", "-1002659515511"))
 except:
     log = owner
     print('Fill log or give user/channel/group id atleast!')
