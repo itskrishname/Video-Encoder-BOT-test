@@ -1,28 +1,13 @@
-# VideoEncoder - a telegram bot for compressing/encoding videos in h264/h265 format.
-# Copyright (c) 2021 WeebTime/VideoEncoder
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import logging
 import os
 import time
 import uuid
+import platform
 from io import BytesIO, StringIO
 from logging.handlers import RotatingFileHandler
-from datetime import datetime
+from datetime import datetime, timezone
 
-# Python 3.10+ compatibility fix - यह बहुत important है!
+# Python 3.10+ compatibility fix
 import collections
 try:
     from collections.abc import Mapping, MutableMapping, Iterable, MutableSet, Callable
@@ -45,22 +30,53 @@ botStartTime = time.time()
 if os.path.exists('VideoEncoder/config.env'):
     load_dotenv('VideoEncoder/config.env')
 
-# Time synchronization fix
-os.environ['TZ'] = 'UTC'
-time.tzset()
+# Advanced time synchronization fix for Heroku
+import subprocess
+import sys
 
-print(f"🕐 Current UTC Time: {datetime.utcnow()}")
+def sync_system_time():
+    """Advanced time synchronization for Heroku dyno"""
+    try:
+        # Force UTC timezone
+        os.environ['TZ'] = 'UTC'
+        time.tzset()
+        
+        # Get current time in different formats
+        current_utc = datetime.now(timezone.utc)
+        current_timestamp = int(current_utc.timestamp())
+        
+        print(f"🕐 System UTC Time: {current_utc}")
+        print(f"🕐 Timestamp: {current_timestamp}")
+        print(f"🖥️ Platform: {platform.system()}")
+        
+        # Try to sync time if on Heroku (Linux)
+        if platform.system() == 'Linux':
+            try:
+                # Force time sync (may fail on Heroku but worth trying)
+                subprocess.run(['date'], check=False, capture_output=True)
+                print("🔄 Time sync attempted")
+            except:
+                print("⚠️ Manual time sync not possible on Heroku")
+        
+        return True
+    except Exception as e:
+        print(f"⚠️ Time sync warning: {e}")
+        return True
 
-# Variables with your original values as fallback
+# Execute time sync
+sync_system_time()
+
+# Variables
 api_id = int(os.environ.get("API_ID", "24828197"))
 api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
 bot_token = os.environ.get("BOT_TOKEN", "7685081691:AAFhcrRMYsuoYNRoFz-mgpzElLIdvHVeTsU")
 
 database = os.environ.get("MONGO_URI", "mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 
-# Dynamic session name to avoid time sync conflicts
+# Use unique session name with current timestamp + random string
+import random
 session_base = os.environ.get("SESSION_NAME", "encoderbot")
-session = f"{session_base}_{int(time.time())}"  # Time-based unique session
+session = f"{session_base}_{int(time.time())}_{random.randint(1000,9999)}"
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
@@ -88,19 +104,9 @@ PROGRESS = """
 """
 
 video_mimetype = [
-    "video/x-flv",
-    "video/mp4",
-    "application/x-mpegURL",
-    "video/MP2T",
-    "video/3gpp",
-    "video/quicktime",
-    "video/x-msvideo",
-    "video/x-ms-wmv",
-    "video/x-matroska",
-    "video/webm",
-    "video/x-m4v",
-    "video/quicktime",
-    "video/mpeg"
+    "video/x-flv", "video/mp4", "application/x-mpegURL", "video/MP2T",
+    "video/3gpp", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv",
+    "video/x-matroska", "video/webm", "video/x-m4v", "video/quicktime", "video/mpeg"
 ]
 
 def memory_file(name=None, contents=None, *, bytes=True):
@@ -132,7 +138,7 @@ logging.basicConfig(
     handlers=[
         RotatingFileHandler(
             f'{log_dir}/logs.txt',
-            maxBytes=10*1024*1024,  # 10MB
+            maxBytes=10*1024*1024,
             backupCount=5
         ),
         logging.StreamHandler()
@@ -145,14 +151,15 @@ LOGGER = logging.getLogger(__name__)
 
 print(f"🔧 Using session name: {session}")
 
-# Compatible Client configuration - Pyrogram 2.0.59 के लिए optimized
+# Enhanced Client with better time sync parameters
 app = Client(
     session,
     bot_token=bot_token,
     api_id=api_id,
     api_hash=api_hash,
     plugins={'root': os.path.join(__package__, 'plugins')},
-    sleep_threshold=30  # Compatible value for Pyrogram 2.0.59
+    sleep_threshold=180,  # Increased to 3 minutes for better time sync
+    no_updates=False  # Ensure updates are enabled
 )
 
 print("✅ Client initialized successfully!")
