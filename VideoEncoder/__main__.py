@@ -1,23 +1,9 @@
-# VideoEncoder - a telegram bot for compressing/encoding videos in h264/h265 format.
-# Copyright (c) 2021 WeebTime/VideoEncoder
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import dns.resolver
 import asyncio
 import sys
 import logging
+import time
+from datetime import datetime, timezone
 from pyrogram import idle
 from pyrogram.errors import BadMsgNotification, FloodWait, AuthKeyUnregistered
 
@@ -27,44 +13,101 @@ from . import app, log
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
-async def safe_start_bot():
-    """Safely start bot with connection state check"""
-    try:
-        # Check if already connected
-        if app.is_connected:
-            print("⚠️ Client already connected, disconnecting first...")
-            await app.stop()
-            await asyncio.sleep(2)
-        
-        print("🚀 Starting bot...")
-        await app.start()
-        
-        # Success message भेजें
+async def force_time_sync_start():
+    """Time sync issue के लिए advanced retry logic"""
+    max_retries = 8
+    base_delay = 5
+    
+    for attempt in range(max_retries):
         try:
-            bot_info = await app.get_me()
-            success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>'
-            await app.send_message(chat_id=log, text=success_msg)
+            print(f"🚀 Starting bot... (Attempt {attempt + 1}/{max_retries})")
+            
+            # Advanced time sync check
+            current_time = datetime.now(timezone.utc)
+            print(f"🕐 Current UTC: {current_time}")
+            print(f"🕐 Timestamp: {int(current_time.timestamp())}")
+            
+            # Try different approaches for each attempt
+            if attempt == 0:
+                # Normal start
+                await app.start()
+            elif attempt == 1:
+                # Wait a bit and try
+                await asyncio.sleep(3)
+                await app.start()
+            elif attempt == 2:
+                # Force disconnect and reconnect
+                try:
+                    if app.is_connected:
+                        await app.stop()
+                    await asyncio.sleep(5)
+                except:
+                    pass
+                await app.start()
+            else:
+                # Progressive delay increase
+                delay = base_delay * (attempt - 2)
+                print(f"⏳ Waiting {delay} seconds for time sync...")
+                await asyncio.sleep(delay)
+                await app.start()
+            
+            # Success message
+            try:
+                bot_info = await app.get_me()
+                success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>\n<b>🕐 Attempt:</b> {attempt + 1}\n<b>🕐 Time:</b> {datetime.now(timezone.utc)}'
+                await app.send_message(chat_id=log, text=success_msg)
+            except Exception as e:
+                print(f"Could not send start message: {e}")
+            
+            print("✅ Bot started successfully!")
+            return True
+            
+        except BadMsgNotification as e:
+            print(f"⚠️ Time sync error (Attempt {attempt + 1}): {e}")
+            
+            # Clean up session files on time sync error
+            if attempt > 2:  # After 3rd attempt
+                try:
+                    import os
+                    import glob
+                    session_files = glob.glob("VideoEncoder/*.session*")
+                    for file in session_files:
+                        try:
+                            os.remove(file)
+                            print(f"🗑️ Cleaned session file: {file}")
+                        except:
+                            pass
+                except:
+                    pass
+            
+            if attempt < max_retries - 1:
+                delay = base_delay + (attempt * 2)  # Progressive delay
+                print(f"⏳ Waiting {delay} seconds before retry...")
+                await asyncio.sleep(delay)
+            else:
+                print("❌ Failed to start after all retries!")
+                return False
+                
         except Exception as e:
-            print(f"Could not send start message: {e}")
-        
-        print("✅ Bot started successfully!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error starting bot: {e}")
-        return False
+            print(f"❌ Unexpected error (Attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(base_delay)
+            else:
+                return False
+    
+    return False
 
 async def main():
-    """Main function with proper connection handling"""
+    """Main function with advanced time sync handling"""
     try:
-        print("🎯 Initializing Video Encoder Bot...")
+        print("🎯 Initializing Video Encoder Bot with Time Sync Fix...")
         
-        # Start bot safely
-        if await safe_start_bot():
+        # Start bot with time sync retry logic
+        if await force_time_sync_start():
             print("🎯 Bot is running... Press Ctrl+C to stop")
             await idle()
         else:
-            print("❌ Bot failed to start!")
+            print("❌ Bot failed to start after all attempts!")
             sys.exit(1)
             
     except KeyboardInterrupt:
