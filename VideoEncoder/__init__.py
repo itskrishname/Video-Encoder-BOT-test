@@ -1,11 +1,10 @@
 import logging
 import os
 import time
-import uuid
-import random
+import ntplib
 from io import BytesIO, StringIO
 from logging.handlers import RotatingFileHandler
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 # Python 3.10+ compatibility fix
 import collections
@@ -23,48 +22,62 @@ except ImportError:
 from dotenv import load_dotenv
 from pyrogram import Client
 
+# NTP Time Synchronization (GitHub solution)
+def ntp_time_sync():
+    """NTP-based time synchronization - popular GitHub solution"""
+    try:
+        print("🕐 Attempting NTP time sync...")
+        ntp_client = ntplib.NTPClient()
+        
+        # Try multiple NTP servers
+        ntp_servers = ['pool.ntp.org', 'time.google.com', '0.pool.ntp.org']
+        
+        for server in ntp_servers:
+            try:
+                response = ntp_client.request(server, version=3)
+                ntp_time = response.tx_time
+                current_time = time.time()
+                time_offset = ntp_time - current_time
+                
+                print(f"✅ NTP sync successful with {server}")
+                print(f"🕐 NTP Time: {datetime.fromtimestamp(ntp_time, timezone.utc)}")
+                print(f"🕐 Local Time: {datetime.fromtimestamp(current_time, timezone.utc)}")
+                print(f"🕐 Time Offset: {time_offset:.2f} seconds")
+                
+                return ntp_time, time_offset
+            except Exception as e:
+                print(f"⚠️ NTP server {server} failed: {e}")
+                continue
+                
+        print("⚠️ All NTP servers failed, using system time")
+        return time.time(), 0
+        
+    except Exception as e:
+        print(f"⚠️ NTP sync failed: {e}")
+        return time.time(), 0
+
 botStartTime = time.time()
 
 if os.path.exists('VideoEncoder/config.env'):
     load_dotenv('VideoEncoder/config.env')
 
-# SAFE TIME OFFSET - No recursion, just offset calculation
-def safe_time_offset():
-    """Safe time offset calculation without recursion"""
-    try:
-        os.environ['TZ'] = 'UTC'
-        time.tzset()
-        
-        # Get current time
-        current_utc = datetime.now(timezone.utc)
-        current_timestamp = int(current_utc.timestamp())
-        
-        # Calculate offset for Heroku time lag (add 30 seconds)
-        offset_timestamp = current_timestamp + 30
-        
-        print(f"🕐 Original UTC: {current_utc}")
-        print(f"🕐 Original Timestamp: {current_timestamp}")
-        print(f"🕐 Offset Timestamp: {offset_timestamp}")
-        
-        # NO TIME.TIME PATCHING - just return offset value
-        return offset_timestamp
-    except Exception as e:
-        print(f"⚠️ Time calculation error: {e}")
-        return int(time.time()) + 30  # Simple fallback with offset
+# Execute NTP sync
+ntp_time, time_offset = ntp_time_sync()
 
-# Get offset timestamp
-sync_timestamp = safe_time_offset()
+# Force timezone
+os.environ['TZ'] = 'UTC'
+time.tzset()
 
-# Your original configurations
+# Your configurations
 api_id = int(os.environ.get("API_ID", "24828197"))
 api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
 bot_token = os.environ.get("BOT_TOKEN", "7685081691:AAFhcrRMYsuoYNRoFz-mgpzElLIdvHVeTsU")
 
 database = os.environ.get("MONGO_URI", "mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 
-# Simple unique session name
+# Session with NTP timestamp
 session_base = os.environ.get("SESSION_NAME", "encoderbot")
-session = f"{session_base}_clean_{sync_timestamp}_{random.randint(1000,9999)}"
+session = f"{session_base}_ntp_{int(ntp_time)}"
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
@@ -110,9 +123,8 @@ def memory_file(name=None, contents=None, *, bytes=True):
 for directory in [download_dir, encode_dir]:
     if not os.path.isdir(directory):
         os.makedirs(directory)
-        print(f"📁 Created directory: {directory}")
 
-# Logging setup
+# Logging
 log_dir = 'VideoEncoder/utils/extras'
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -131,9 +143,9 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
-print(f"🔧 Using clean session: {session}")
+print(f"🔧 Using NTP session: {session}")
 
-# Clean client - no time patching, just clean initialization
+# Client with NTP time sync
 app = Client(
     session,
     bot_token=bot_token,
@@ -142,5 +154,5 @@ app = Client(
     plugins={'root': os.path.join(__package__, 'plugins')}
 )
 
-print("✅ Clean client initialized!")
+print("✅ Client with NTP sync initialized!")
 print(f"📊 Config loaded - Owner: {len(owner)}, Sudo: {len(sudo_users)}, Everyone: {len(everyone)}")
