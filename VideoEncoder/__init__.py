@@ -32,7 +32,7 @@ if os.path.exists('VideoEncoder/config.env'):
 
 api_id = int(os.environ.get("API_ID", "24828197"))
 api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
-bot_token = os.environ.get("BOT_TOKEN", "")
+bot_token = os.environ.get("BOT_TOKEN", "7685081691:AAFhcrRMYsuoYNRoFz-mgpzElLIdvHVeTsU")
 
 database = os.environ.get("MONGO_URI", "DB:mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 session = os.environ.get("SESSION_NAME", "encoderbot")
@@ -45,7 +45,7 @@ encode_dir = os.environ.get("ENCODE_DIR", "VideoEncoder/encodes/")
 
 owner = list(set(int(x) for x in os.environ.get("OWNER_ID", "7660990923").split()))
 sudo_users = list(set(int(x) for x in os.environ.get("SUDO_USERS", "2089948673").split()))
-everyone = list(set(int(x) for x in os.environ.get("EVERYONE_CHATS", "").split()))
+everyone = list(set(int(x) for x in os.environ.get("EVERYONE_CHATS", "-1002775838126").split()))
 all = everyone + sudo_users + owner
 
 try:
