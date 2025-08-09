@@ -145,18 +145,14 @@ LOGGER = logging.getLogger(__name__)
 
 print(f"🔧 Using session name: {session}")
 
-# Enhanced Client with better configuration for time sync fix
+# Compatible Client configuration - Pyrogram 2.0.59 के लिए optimized
 app = Client(
     session,
     bot_token=bot_token,
     api_id=api_id,
     api_hash=api_hash,
     plugins={'root': os.path.join(__package__, 'plugins')},
-    sleep_threshold=60,  # Increased from 30 for better stability
-    workers=4,  # Limit concurrent workers
-    workdir="VideoEncoder",
-    max_concurrent_transmissions=2,  # Limit concurrent uploads/downloads
-    test_mode=False  # Explicitly set to False
+    sleep_threshold=30  # Compatible value for Pyrogram 2.0.59
 )
 
 print("✅ Client initialized successfully!")
