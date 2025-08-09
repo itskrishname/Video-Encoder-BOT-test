@@ -15,19 +15,90 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import dns.resolver
+import asyncio
+import sys
+import logging
 from pyrogram import idle
+from pyrogram.errors import BadMsgNotification, FloodWait, AuthKeyUnregistered
 
 from . import app, log
 
+# DNS configuration
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-dns.resolver.default_resolver.nameservers = [
-    '8.8.8.8']  # this is a google public dns
+dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
+async def start_bot_with_retry():
+    """Bot start करने के लिए retry logic के साथ"""
+    max_retries = 5
+    retry_delay = 10
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"🚀 Starting bot... (Attempt {attempt + 1}/{max_retries})")
+            await app.start()
+            
+            # Success message भेजें
+            try:
+                bot_info = await app.get_me()
+                success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>\n<b>🕐 Attempt:</b> {attempt + 1}'
+                await app.send_message(chat_id=log, text=success_msg)
+            except Exception as e:
+                print(f"Could not send start message: {e}")
+            
+            print("✅ Bot started successfully!")
+            return True
+            
+        except BadMsgNotification as e:
+            print(f"⚠️ Time synchronization error (Attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                print(f"⏳ Waiting {retry_delay} seconds before retry...")
+                await asyncio.sleep(retry_delay)
+                retry_delay += 5  # Increase delay for next attempt
+            else:
+                print("❌ Failed to start after all retries!")
+                return False
+                
+        except FloodWait as e:
+            print(f"⏳ FloodWait: Waiting {e.x} seconds...")
+            await asyncio.sleep(e.x)
+            
+        except AuthKeyUnregistered:
+            print("❌ Session expired! Please delete session file and restart.")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Unexpected error (Attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+                retry_delay += 5
+            else:
+                print("❌ Failed to start after all retries!")
+                return False
+    
+    return False
 
 async def main():
-    await app.start()
-    await app.send_message(chat_id=log, text=f'<b>Bot Started! @{(await app.get_me()).username}</b>')
-    await idle()
-    await app.stop()
+    """Main function with proper error handling"""
+    try:
+        # Bot start करें retry logic के साथ
+        if await start_bot_with_retry():
+            print("🎯 Bot is running... Press Ctrl+C to stop")
+            await idle()
+        else:
+            print("❌ Bot failed to start!")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        print("🛑 Bot stopped by user!")
+    except Exception as e:
+        print(f"❌ Fatal error in main: {e}")
+        logging.error(f"Fatal error: {e}", exc_info=True)
+    finally:
+        try:
+            await app.stop()
+            print("✅ Bot stopped cleanly!")
+        except:
+            pass
 
-app.loop.run_until_complete(main())
+if __name__ == "__main__":
+    app.loop.run_until_complete(main())
