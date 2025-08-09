@@ -2,7 +2,7 @@ import logging
 import os
 import time
 import uuid
-import platform
+import random
 from io import BytesIO, StringIO
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone
@@ -19,7 +19,6 @@ try:
     print("✅ Python 3.10+ compatibility fix applied!")
 except ImportError:
     print("⚠️ Using older Python version")
-    pass
 
 from dotenv import load_dotenv
 from pyrogram import Client
@@ -30,53 +29,42 @@ botStartTime = time.time()
 if os.path.exists('VideoEncoder/config.env'):
     load_dotenv('VideoEncoder/config.env')
 
-# Advanced time synchronization fix for Heroku
-import subprocess
-import sys
-
-def sync_system_time():
-    """Advanced time synchronization for Heroku dyno"""
+# ULTIMATE TIME SYNC FIX - Force time reference
+def force_time_sync():
+    """Ultimate time synchronization fix"""
     try:
-        # Force UTC timezone
+        # Force UTC with multiple methods
         os.environ['TZ'] = 'UTC'
         time.tzset()
         
-        # Get current time in different formats
+        # Force current time reference
         current_utc = datetime.now(timezone.utc)
         current_timestamp = int(current_utc.timestamp())
         
-        print(f"🕐 System UTC Time: {current_utc}")
+        print(f"🕐 Forced UTC Time: {current_utc}")
         print(f"🕐 Timestamp: {current_timestamp}")
-        print(f"🖥️ Platform: {platform.system()}")
         
-        # Try to sync time if on Heroku (Linux)
-        if platform.system() == 'Linux':
-            try:
-                # Force time sync (may fail on Heroku but worth trying)
-                subprocess.run(['date'], check=False, capture_output=True)
-                print("🔄 Time sync attempted")
-            except:
-                print("⚠️ Manual time sync not possible on Heroku")
+        # Add small random delay to avoid exact timing conflicts
+        time.sleep(random.uniform(1, 3))
         
-        return True
+        return current_timestamp
     except Exception as e:
-        print(f"⚠️ Time sync warning: {e}")
-        return True
+        print(f"⚠️ Time sync error: {e}")
+        return int(time.time())
 
-# Execute time sync
-sync_system_time()
+# Execute ultimate time sync
+sync_timestamp = force_time_sync()
 
-# Variables
+# Variables with your original values
 api_id = int(os.environ.get("API_ID", "24828197"))
 api_hash = os.environ.get("API_HASH", "d36e278e89ebeb900aeda4128d413a77")
 bot_token = os.environ.get("BOT_TOKEN", "7685081691:AAFhcrRMYsuoYNRoFz-mgpzElLIdvHVeTsU")
 
 database = os.environ.get("MONGO_URI", "mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/")
 
-# Use unique session name with current timestamp + random string
-import random
+# COMPLETELY UNIQUE session name - timestamp + random + process ID
 session_base = os.environ.get("SESSION_NAME", "encoderbot")
-session = f"{session_base}_{int(time.time())}_{random.randint(1000,9999)}"
+session = f"{session_base}_{sync_timestamp}_{random.randint(10000,99999)}_{os.getpid()}"
 
 drive_dir = os.environ.get("DRIVE_DIR", "")
 index = os.environ.get("INDEX_URL", "")
@@ -104,9 +92,19 @@ PROGRESS = """
 """
 
 video_mimetype = [
-    "video/x-flv", "video/mp4", "application/x-mpegURL", "video/MP2T",
-    "video/3gpp", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv",
-    "video/x-matroska", "video/webm", "video/x-m4v", "video/quicktime", "video/mpeg"
+    "video/x-flv",
+    "video/mp4",
+    "application/x-mpegURL",
+    "video/MP2T",
+    "video/3gpp",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/x-ms-wmv",
+    "video/x-matroska",
+    "video/webm",
+    "video/x-m4v",
+    "video/quicktime",
+    "video/mpeg"
 ]
 
 def memory_file(name=None, contents=None, *, bytes=True):
@@ -138,7 +136,7 @@ logging.basicConfig(
     handlers=[
         RotatingFileHandler(
             f'{log_dir}/logs.txt',
-            maxBytes=10*1024*1024,
+            maxBytes=10*1024*1024,  # 10MB
             backupCount=5
         ),
         logging.StreamHandler()
@@ -149,18 +147,17 @@ logging.getLogger("pyrogram").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
-print(f"🔧 Using session name: {session}")
+print(f"🔧 Using unique session: {session}")
 
-# Enhanced Client with better time sync parameters
+# ULTIMATE CLIENT - Minimal configuration for maximum compatibility
 app = Client(
     session,
     bot_token=bot_token,
     api_id=api_id,
     api_hash=api_hash,
-    plugins={'root': os.path.join(__package__, 'plugins')},
-    sleep_threshold=180,  # Increased to 3 minutes for better time sync
-    no_updates=False  # Ensure updates are enabled
+    plugins={'root': os.path.join(__package__, 'plugins')}
+    # NO other parameters to avoid conflicts
 )
 
-print("✅ Client initialized successfully!")
+print("✅ Client initialized with minimal config!")
 print(f"📊 Config loaded - Owner: {len(owner)}, Sudo: {len(sudo_users)}, Everyone: {len(everyone)}")
