@@ -27,61 +27,40 @@ from . import app, log
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
 
-async def start_bot_with_retry():
-    """Bot start करने के लिए retry logic के साथ"""
-    max_retries = 5
-    retry_delay = 10
-    
-    for attempt in range(max_retries):
+async def safe_start_bot():
+    """Safely start bot with connection state check"""
+    try:
+        # Check if already connected
+        if app.is_connected:
+            print("⚠️ Client already connected, disconnecting first...")
+            await app.stop()
+            await asyncio.sleep(2)
+        
+        print("🚀 Starting bot...")
+        await app.start()
+        
+        # Success message भेजें
         try:
-            print(f"🚀 Starting bot... (Attempt {attempt + 1}/{max_retries})")
-            await app.start()
-            
-            # Success message भेजें
-            try:
-                bot_info = await app.get_me()
-                success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>\n<b>🕐 Attempt:</b> {attempt + 1}'
-                await app.send_message(chat_id=log, text=success_msg)
-            except Exception as e:
-                print(f"Could not send start message: {e}")
-            
-            print("✅ Bot started successfully!")
-            return True
-            
-        except BadMsgNotification as e:
-            print(f"⚠️ Time synchronization error (Attempt {attempt + 1}): {e}")
-            if attempt < max_retries - 1:
-                print(f"⏳ Waiting {retry_delay} seconds before retry...")
-                await asyncio.sleep(retry_delay)
-                retry_delay += 5  # Increase delay for next attempt
-            else:
-                print("❌ Failed to start after all retries!")
-                return False
-                
-        except FloodWait as e:
-            print(f"⏳ FloodWait: Waiting {e.x} seconds...")
-            await asyncio.sleep(e.x)
-            
-        except AuthKeyUnregistered:
-            print("❌ Session expired! Please delete session file and restart.")
-            return False
-            
+            bot_info = await app.get_me()
+            success_msg = f'<b>✅ Bot Started Successfully! @{bot_info.username}</b>'
+            await app.send_message(chat_id=log, text=success_msg)
         except Exception as e:
-            print(f"❌ Unexpected error (Attempt {attempt + 1}): {e}")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(retry_delay)
-                retry_delay += 5
-            else:
-                print("❌ Failed to start after all retries!")
-                return False
-    
-    return False
+            print(f"Could not send start message: {e}")
+        
+        print("✅ Bot started successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error starting bot: {e}")
+        return False
 
 async def main():
-    """Main function with proper error handling"""
+    """Main function with proper connection handling"""
     try:
-        # Bot start करें retry logic के साथ
-        if await start_bot_with_retry():
+        print("🎯 Initializing Video Encoder Bot...")
+        
+        # Start bot safely
+        if await safe_start_bot():
             print("🎯 Bot is running... Press Ctrl+C to stop")
             await idle()
         else:
@@ -95,8 +74,9 @@ async def main():
         logging.error(f"Fatal error: {e}", exc_info=True)
     finally:
         try:
-            await app.stop()
-            print("✅ Bot stopped cleanly!")
+            if app.is_connected:
+                await app.stop()
+                print("✅ Bot stopped cleanly!")
         except:
             pass
 
