@@ -1,4 +1,4 @@
-# Required
+# Required - Compatible versions
 pyrogram==2.0.59
 TgCrypto
 python-dotenv
